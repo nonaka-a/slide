@@ -28,6 +28,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             touch-action: none;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent; /* iOSでのタップハイライトを無効化 */
         }
 
         .header-toolbar {
@@ -199,7 +200,6 @@
         .exit-zone {
             position: absolute; 
             bottom: 0; 
-            /* 修正箇所: 左端のマスの幅 + ギャップ分を加算して正しい位置へ配置 */
             left: calc(var(--cell-size) + var(--gap)); 
             width: calc(var(--cell-size) * 2 + var(--gap)); 
             height: 6px;
@@ -217,25 +217,25 @@
 <body>
 
     <div class="header-toolbar">
-        <button class="toolbar-btn" data-sound onclick="adjustZoom(0.1)">＋</button>
-        <button class="toolbar-btn" data-sound onclick="adjustZoom(-0.1)">－</button>
-        <button class="toolbar-btn" data-sound onclick="toggleFullscreen()">全画面</button>
-        <button class="toolbar-btn" data-sound id="mute-btn" onclick="toggleMute()">音量: ON</button>
+        <button class="toolbar-btn" data-type="click" onclick="adjustZoom(0.1)">＋</button>
+        <button class="toolbar-btn" data-type="click" onclick="adjustZoom(-0.1)">－</button>
+        <button class="toolbar-btn" data-type="click" onclick="toggleFullscreen()">全画面</button>
+        <button class="toolbar-btn" data-type="click" id="mute-btn" onclick="toggleMute()">音量: ON</button>
     </div>
 
     <div id="title-screen">
         <h1 class="main-title">スライド パズル</h1>
-        <button class="play-btn" data-sound onclick="startGame()">プレイ</button>
+        <button class="play-btn" onclick="startGame()">プレイ</button>
     </div>
 
     <div id="game-screen">
         <div id="game-view-wrapper">
             <div class="level-selector">
-                <button class="level-btn" data-sound onclick="initGame(1)">LV 1</button>
-                <button class="level-btn" data-sound onclick="initGame(2)">LV 2</button>
-                <button class="level-btn" data-sound onclick="initGame(3)">LV 3</button>
-                <button class="level-btn" data-sound onclick="initGame(4)">LV 4</button>
-                <button class="level-btn" data-sound onclick="initGame(5)">LV 5</button>
+                <button class="level-btn" data-type="click" onclick="initGame(1)">LV 1</button>
+                <button class="level-btn" data-type="click" onclick="initGame(2)">LV 2</button>
+                <button class="level-btn" data-type="click" onclick="initGame(3)">LV 3</button>
+                <button class="level-btn" data-type="click" onclick="initGame(4)">LV 4</button>
+                <button class="level-btn" data-type="click" onclick="initGame(5)">LV 5</button>
             </div>
 
             <div class="game-container">
@@ -247,7 +247,7 @@
             <div id="message"></div>
 
             <div class="controls">
-                <button class="reset" data-sound onclick="initGame(currentLevel)">リセット</button>
+                <button class="reset" data-type="click" onclick="initGame(currentLevel)">リセット</button>
             </div>
         </div>
     </div>
@@ -256,10 +256,25 @@
         const ROWS = 5, COLS = 4, CELL = 75, GAP = 10;
         const boardEl = document.getElementById('board');
         
-        const snapSound = new Audio('snap.mp3');
-        const clickSound = new Audio('click.mp3');
-        const clearSound = new Audio('clear.mp3');
-        
+        // --- iPad/iOS対応オーディオシステム ---
+        // 連続再生用にプールを作成
+        const SNAP_POOL_SIZE = 4;
+        const sounds = {
+            snap: [], // 配列として保持
+            click: new Audio('click.mp3'),
+            clear: new Audio('clear.mp3')
+        };
+        let snapIndex = 0;
+
+        // 初期化：スナップ音を複数ロード
+        for(let i = 0; i < SNAP_POOL_SIZE; i++) {
+            const a = new Audio('snap.mp3');
+            a.preload = 'auto';
+            sounds.snap.push(a);
+        }
+        sounds.click.preload = 'auto';
+        sounds.clear.preload = 'auto';
+
         let pieces = [], activePiece = null, startX, startY, initialPieceX, initialPieceY;
         let currentLevel = 1, currentZoom = 1.0, isMuted = false;
 
@@ -299,16 +314,49 @@
             ]
         };
 
-        document.querySelectorAll('[data-sound]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!isMuted) {
-                    clickSound.currentTime = 0;
-                    clickSound.play().catch(() => {});
-                }
-            });
+        // ボタンクリック音の紐付け
+        document.querySelectorAll('[data-type="click"]').forEach(btn => {
+            btn.addEventListener('click', () => playSound('click'));
         });
 
+        // iOS対応: 最初のユーザー操作で全音声をアンロック（無音再生）する
+        function unlockAudio() {
+            const allSounds = [...sounds.snap, sounds.click, sounds.clear];
+            allSounds.forEach(audio => {
+                audio.volume = 0; // 無音
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1; // 音量戻す
+                }).catch(() => {});
+            });
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+
+            let audioToPlay;
+            if (type === 'snap') {
+                // スナップ音はプールから順番に使う（連打対応）
+                audioToPlay = sounds.snap[snapIndex];
+                snapIndex = (snapIndex + 1) % SNAP_POOL_SIZE;
+            } else {
+                audioToPlay = sounds[type];
+            }
+
+            if (audioToPlay) {
+                audioToPlay.currentTime = 0;
+                audioToPlay.play().catch(e => { /* iOSのエラー抑制 */ });
+            }
+        }
+
         function startGame() {
+            // ここでオーディオをアンロック
+            unlockAudio();
+            
+            // クリック音も再生
+            playSound('click');
+
             document.getElementById('title-screen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('title-screen').style.display = 'none';
@@ -323,8 +371,8 @@
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else if (document.exitFullscreen) document.exitFullscreen();
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+            else if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
         }
 
         function toggleMute() {
@@ -388,9 +436,9 @@
             const newX = Math.round(parseFloat(activePiece.el.style.left) / (CELL + GAP));
             const newY = Math.round(parseFloat(activePiece.el.style.top) / (CELL + GAP));
 
-            if ((newX !== activePiece.oldX || newY !== activePiece.oldY) && !isMuted) {
-                snapSound.currentTime = 0;
-                snapSound.play().catch(() => {});
+            if (newX !== activePiece.oldX || newY !== activePiece.oldY) {
+                // スナップ音再生 (Poolを使用)
+                playSound('snap');
             }
 
             activePiece.data.x = newX; activePiece.data.y = newY;
@@ -418,10 +466,7 @@
             const red = pieces.find(p => p.type === 'big');
             if (red.x === 1 && red.y === 3) {
                 document.getElementById('message').innerText = "CLEAR";
-                if (!isMuted) {
-                    clearSound.currentTime = 0;
-                    clearSound.play().catch(() => {});
-                }
+                playSound('clear');
             }
         }
     </script>
