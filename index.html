@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>スライド パズル</title>
+    <style>
+        :root {
+            --cell-size: 75px;
+            --gap: 10px;
+            --red: #ff3b30;
+            --blue: #4cc9f0;
+            --yellow: #ffcc00;
+            --green: #88d44c;
+            --shadow: rgba(0, 0, 0, 0.4);
+            --highlight: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        .header-toolbar {
+            width: 100%;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #ddd;
+            z-index: 110;
+        }
+
+        .toolbar-btn {
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #title-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.4s;
+        }
+
+        .main-title {
+            font-size: 48px;
+            font-weight: 900;
+            color: #000;
+            margin-bottom: 60px;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        .play-btn {
+            font-size: 20px;
+            padding: 12px 60px;
+            background-color: #000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #game-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            margin-top: 40px;
+        }
+
+        #game-screen.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #game-view-wrapper {
+            transition: transform 0.2s ease-out;
+            transform-origin: center top;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .level-selector {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .level-btn {
+            padding: 8px 14px;
+            border: 1px solid #000;
+            background: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .level-btn.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .game-container {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 2px solid #333;
+        }
+
+        .board {
+            width: calc(var(--cell-size) * 4 + var(--gap) * 3);
+            height: calc(var(--cell-size) * 5 + var(--gap) * 4);
+            position: relative;
+            background-color: #000;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .piece {
+            position: absolute;
+            border-radius: 12px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            box-shadow: 0 4px 0 var(--shadow), inset 0 2px 3px var(--highlight);
+            z-index: 1;
+        }
+
+        .piece:active { cursor: grabbing; z-index: 10; }
+
+        .piece.big {
+            width: calc(var(--cell-size) * 2 + var(--gap));
+            height: calc(var(--cell-size) * 2 + var(--gap));
+            background: linear-gradient(145deg, var(--red), #c0392b);
+        }
+        .piece.big::before {
+            content: ""; width: 60%; height: 60%; background-color: rgba(0,0,0,0.15);
+            clip-path: polygon(50% 10%, 90% 90%, 10% 90%);
+        }
+
+        .piece.v-rect {
+            width: var(--cell-size);
+            height: calc(var(--cell-size) * 2 + var(--gap));
+            background: linear-gradient(145deg, var(--blue), #0096c7);
+        }
+        .piece.v-rect::after {
+            content: ""; width: 25%; height: 70%; border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 20px; background: rgba(0,0,0,0.1);
+        }
+
+        .piece.green-h {
+            width: calc(var(--cell-size) * 2 + var(--gap));
+            height: var(--cell-size);
+            background: linear-gradient(145deg, var(--green), #6ba63c);
+        }
+        .piece.green-h::after {
+            content: ""; width: 70%; height: 25%; border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 20px; background: rgba(0,0,0,0.1);
+        }
+
+        .piece.small {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: linear-gradient(145deg, var(--yellow), #f39c12);
+        }
+        .piece.small::before {
+            content: ""; width: 50%; height: 50%; border-radius: 50%; border: 3px double rgba(0,0,0,0.15);
+        }
+
+        .exit-zone {
+            position: absolute; 
+            bottom: 0; 
+            /* 修正箇所: 左端のマスの幅 + ギャップ分を加算して正しい位置へ配置 */
+            left: calc(var(--cell-size) + var(--gap)); 
+            width: calc(var(--cell-size) * 2 + var(--gap)); 
+            height: 6px;
+            background: var(--red);
+            border-radius: 3px 3px 0 0;
+            opacity: 0.8;
+        }
+
+        #message { margin-top: 20px; font-size: 20px; font-weight: bold; height: 24px; text-transform: uppercase; }
+
+        .controls { margin-top: 20px; }
+        button.reset { padding: 10px 40px; border: 1px solid #000; background: #fff; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header-toolbar">
+        <button class="toolbar-btn" data-sound onclick="adjustZoom(0.1)">＋</button>
+        <button class="toolbar-btn" data-sound onclick="adjustZoom(-0.1)">－</button>
+        <button class="toolbar-btn" data-sound onclick="toggleFullscreen()">全画面</button>
+        <button class="toolbar-btn" data-sound id="mute-btn" onclick="toggleMute()">音量: ON</button>
+    </div>
+
+    <div id="title-screen">
+        <h1 class="main-title">スライド パズル</h1>
+        <button class="play-btn" data-sound onclick="startGame()">プレイ</button>
+    </div>
+
+    <div id="game-screen">
+        <div id="game-view-wrapper">
+            <div class="level-selector">
+                <button class="level-btn" data-sound onclick="initGame(1)">LV 1</button>
+                <button class="level-btn" data-sound onclick="initGame(2)">LV 2</button>
+                <button class="level-btn" data-sound onclick="initGame(3)">LV 3</button>
+                <button class="level-btn" data-sound onclick="initGame(4)">LV 4</button>
+                <button class="level-btn" data-sound onclick="initGame(5)">LV 5</button>
+            </div>
+
+            <div class="game-container">
+                <div class="board" id="board">
+                    <div class="exit-zone"></div>
+                </div>
+            </div>
+
+            <div id="message"></div>
+
+            <div class="controls">
+                <button class="reset" data-sound onclick="initGame(currentLevel)">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 5, COLS = 4, CELL = 75, GAP = 10;
+        const boardEl = document.getElementById('board');
+        
+        const snapSound = new Audio('snap.mp3');
+        const clickSound = new Audio('click.mp3');
+        const clearSound = new Audio('clear.mp3');
+        
+        let pieces = [], activePiece = null, startX, startY, initialPieceX, initialPieceY;
+        let currentLevel = 1, currentZoom = 1.0, isMuted = false;
+
+        const levelConfigs = {
+            1: [
+                { id: 1, x: 0, y: 0, w: 1, h: 1, type: 'small' }, { id: 2, x: 1, y: 0, w: 1, h: 1, type: 'small' }, { id: 3, x: 2, y: 0, w: 1, h: 1, type: 'small' }, { id: 4, x: 3, y: 0, w: 1, h: 1, type: 'small' },
+                { id: 5, x: 2, y: 1, w: 1, h: 2, type: 'v-rect' }, { id: 6, x: 3, y: 1, w: 1, h: 1, type: 'small' },
+                { id: 7, x: 0, y: 2, w: 2, h: 2, type: 'big' }, { id: 8, x: 3, y: 2, w: 1, h: 1, type: 'small' },
+                { id: 9, x: 2, y: 3, w: 1, h: 1, type: 'small' }, { id: 10, x: 3, y: 3, w: 1, h: 1, type: 'small' },
+                { id: 11, x: 0, y: 4, w: 1, h: 1, type: 'small' }, { id: 12, x: 1, y: 4, w: 1, h: 1, type: 'small' }, { id: 13, x: 2, y: 4, w: 1, h: 1, type: 'small' }, { id: 14, x: 3, y: 4, w: 1, h: 1, type: 'small' }
+            ],
+            2: [
+                { id: 1, x: 0, y: 0, w: 1, h: 1, type: 'small' }, { id: 2, x: 1, y: 0, w: 1, h: 1, type: 'small' }, { id: 3, x: 2, y: 0, w: 2, h: 2, type: 'big' },
+                { id: 4, x: 0, y: 1, w: 1, h: 1, type: 'small' }, { id: 5, x: 1, y: 1, w: 1, h: 2, type: 'v-rect' },
+                { id: 6, x: 0, y: 2, w: 1, h: 1, type: 'small' }, { id: 7, x: 2, y: 2, w: 1, h: 1, type: 'small' }, { id: 8, x: 3, y: 2, w: 1, h: 1, type: 'small' },
+                { id: 9, x: 0, y: 3, w: 2, h: 1, type: 'green-h' }, { id: 10, x: 2, y: 3, w: 1, h: 1, type: 'small' }, { id: 11, x: 3, y: 3, w: 1, h: 1, type: 'small' },
+                { id: 12, x: 0, y: 4, w: 1, h: 1, type: 'small' }, { id: 13, x: 1, y: 4, w: 1, h: 1, type: 'small' }
+            ],
+            3: [
+                { id: 1, x: 0, y: 0, w: 1, h: 1, type: 'small' }, { id: 2, x: 1, y: 0, w: 1, h: 1, type: 'small' }, { id: 3, x: 2, y: 0, w: 1, h: 1, type: 'small' }, { id: 4, x: 3, y: 0, w: 1, h: 1, type: 'small' },
+                { id: 5, x: 0, y: 1, w: 1, h: 2, type: 'v-rect' }, { id: 6, x: 1, y: 1, w: 2, h: 2, type: 'big' }, { id: 7, x: 3, y: 1, w: 1, h: 2, type: 'v-rect' },
+                { id: 8, x: 1, y: 3, w: 2, h: 1, type: 'green-h' },
+                { id: 9, x: 0, y: 4, w: 1, h: 1, type: 'small' }, { id: 10, x: 1, y: 4, w: 1, h: 1, type: 'small' }, { id: 11, x: 2, y: 4, w: 1, h: 1, type: 'small' }, { id: 12, x: 3, y: 4, w: 1, h: 1, type: 'small' }
+            ],
+            4: [
+                { id: 1, x: 0, y: 0, w: 1, h: 2, type: 'v-rect' }, { id: 2, x: 1, y: 0, w: 1, h: 1, type: 'small' }, { id: 3, x: 2, y: 0, w: 1, h: 1, type: 'small' }, { id: 4, x: 3, y: 0, w: 1, h: 2, type: 'v-rect' },
+                { id: 5, x: 1, y: 1, w: 2, h: 2, type: 'big' },
+                { id: 6, x: 0, y: 2, w: 1, h: 1, type: 'small' }, { id: 7, x: 3, y: 2, w: 1, h: 1, type: 'small' },
+                { id: 8, x: 0, y: 3, w: 2, h: 1, type: 'green-h' }, { id: 9, x: 2, y: 3, w: 1, h: 1, type: 'small' }, { id: 10, x: 3, y: 3, w: 1, h: 1, type: 'small' },
+                { id: 11, x: 1, y: 4, w: 2, h: 1, type: 'green-h' }
+            ],
+            5: [
+                { id: 1, x: 0, y: 0, w: 1, h: 2, type: 'v-rect' }, { id: 2, x: 1, y: 0, w: 2, h: 2, type: 'big' }, { id: 3, x: 3, y: 0, w: 1, h: 2, type: 'v-rect' },
+                { id: 4, x: 0, y: 2, w: 1, h: 2, type: 'v-rect' }, { id: 5, x: 1, y: 2, w: 2, h: 1, type: 'green-h' }, { id: 6, x: 3, y: 2, w: 1, h: 2, type: 'v-rect' },
+                { id: 7, x: 1, y: 3, w: 1, h: 1, type: 'small' }, { id: 8, x: 2, y: 3, w: 1, h: 1, type: 'small' },
+                { id: 9, x: 0, y: 4, w: 1, h: 1, type: 'small' }, { id: 10, x: 3, y: 4, w: 1, h: 1, type: 'small' }
+            ]
+        };
+
+        document.querySelectorAll('[data-sound]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!isMuted) {
+                    clickSound.currentTime = 0;
+                    clickSound.play().catch(() => {});
+                }
+            });
+        });
+
+        function startGame() {
+            document.getElementById('title-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('title-screen').style.display = 'none';
+                document.getElementById('game-screen').classList.add('visible');
+                initGame(1);
+            }, 400);
+        }
+
+        function adjustZoom(val) {
+            currentZoom = Math.max(0.5, Math.min(1.5, currentZoom + val));
+            document.getElementById('game-view-wrapper').style.transform = `scale(${currentZoom})`;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = `音量: ${isMuted ? 'OFF' : 'ON'}`;
+        }
+
+        function initGame(lv) {
+            currentLevel = lv;
+            document.getElementById('message').innerText = "";
+            document.querySelectorAll('.level-btn').forEach((b, i) => {
+                b.classList.toggle('active', i + 1 === lv);
+            });
+            pieces = JSON.parse(JSON.stringify(levelConfigs[lv]));
+            render();
+        }
+
+        function render() {
+            const currentPieces = boardEl.querySelectorAll('.piece');
+            currentPieces.forEach(p => p.remove());
+            pieces.forEach(p => {
+                const div = document.createElement('div');
+                div.className = `piece ${p.type}`;
+                div.style.left = `${p.x * (CELL + GAP)}px`;
+                div.style.top = `${p.y * (CELL + GAP)}px`;
+                div.onpointerdown = (e) => startDrag(e, p, div);
+                boardEl.appendChild(div);
+            });
+        }
+
+        function startDrag(e, piece, el) {
+            activePiece = { data: piece, el: el, oldX: piece.x, oldY: piece.y };
+            startX = e.clientX; startY = e.clientY;
+            initialPieceX = piece.x * (CELL + GAP);
+            initialPieceY = piece.y * (CELL + GAP);
+            el.setPointerCapture(e.pointerId);
+            el.onpointermove = onDrag;
+            el.onpointerup = stopDrag;
+        }
+
+        function onDrag(e) {
+            if (!activePiece) return;
+            const dx = (e.clientX - startX) / currentZoom;
+            const dy = (e.clientY - startY) / currentZoom;
+            let tx = initialPieceX + dx, ty = initialPieceY + dy;
+            const lim = calculateLimits(activePiece.data);
+            const minX = lim.minX * (CELL + GAP), maxX = lim.maxX * (CELL + GAP);
+            const minY = lim.minY * (CELL + GAP), maxY = lim.maxY * (CELL + GAP);
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                tx = Math.max(minX, Math.min(maxX, tx)); ty = initialPieceY;
+            } else {
+                ty = Math.max(minY, Math.min(maxY, ty)); tx = initialPieceX;
+            }
+            activePiece.el.style.left = `${tx}px`;
+            activePiece.el.style.top = `${ty}px`;
+        }
+
+        function stopDrag() {
+            if (!activePiece) return;
+            const newX = Math.round(parseFloat(activePiece.el.style.left) / (CELL + GAP));
+            const newY = Math.round(parseFloat(activePiece.el.style.top) / (CELL + GAP));
+
+            if ((newX !== activePiece.oldX || newY !== activePiece.oldY) && !isMuted) {
+                snapSound.currentTime = 0;
+                snapSound.play().catch(() => {});
+            }
+
+            activePiece.data.x = newX; activePiece.data.y = newY;
+            activePiece.el.onpointermove = null; activePiece.el.onpointerup = null;
+            activePiece = null;
+            render();
+            checkWin();
+        }
+
+        function calculateLimits(p) {
+            let l = { minX: p.x, maxX: p.x, minY: p.y, maxY: p.y };
+            while (canMoveTo(p, l.minX - 1, p.y)) l.minX--;
+            while (canMoveTo(p, l.maxX + 1, p.y)) l.maxX++;
+            while (canMoveTo(p, p.x, l.minY - 1)) l.minY--;
+            while (canMoveTo(p, p.x, l.maxY + 1)) l.maxY++;
+            return l;
+        }
+
+        function canMoveTo(p, nx, ny) {
+            if (nx < 0 || ny < 0 || nx + p.w > COLS || ny + p.h > ROWS) return false;
+            return !pieces.some(o => o.id !== p.id && nx < o.x + o.w && nx + p.w > o.x && ny < o.y + o.h && ny + p.h > o.y);
+        }
+
+        function checkWin() {
+            const red = pieces.find(p => p.type === 'big');
+            if (red.x === 1 && red.y === 3) {
+                document.getElementById('message').innerText = "CLEAR";
+                if (!isMuted) {
+                    clearSound.currentTime = 0;
+                    clearSound.play().catch(() => {});
+                }
+            }
+        }
+    </script>
+</body>
+</html>
