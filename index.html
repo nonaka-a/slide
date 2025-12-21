@@ -28,7 +28,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             touch-action: none;
             overflow: hidden;
-            -webkit-tap-highlight-color: transparent; /* iOSでのタップハイライトを無効化 */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .header-toolbar {
@@ -256,17 +256,15 @@
         const ROWS = 5, COLS = 4, CELL = 75, GAP = 10;
         const boardEl = document.getElementById('board');
         
-        // --- iPad/iOS対応オーディオシステム ---
-        // 連続再生用にプールを作成
+        // --- オーディオ設定 ---
         const SNAP_POOL_SIZE = 4;
         const sounds = {
-            snap: [], // 配列として保持
+            snap: [],
             click: new Audio('click.mp3'),
             clear: new Audio('clear.mp3')
         };
         let snapIndex = 0;
 
-        // 初期化：スナップ音を複数ロード
         for(let i = 0; i < SNAP_POOL_SIZE; i++) {
             const a = new Audio('snap.mp3');
             a.preload = 'auto';
@@ -314,21 +312,28 @@
             ]
         };
 
-        // ボタンクリック音の紐付け
         document.querySelectorAll('[data-type="click"]').forEach(btn => {
             btn.addEventListener('click', () => playSound('click'));
         });
 
-        // iOS対応: 最初のユーザー操作で全音声をアンロック（無音再生）する
+        // iOS対応: 確実に無音(muted)で再生し、再生許可を取得する
         function unlockAudio() {
             const allSounds = [...sounds.snap, sounds.click, sounds.clear];
             allSounds.forEach(audio => {
-                audio.volume = 0; // 無音
+                // 1. ミュート設定 (音が漏れないようにする)
+                audio.muted = true;
+                
+                // 2. 再生開始
                 audio.play().then(() => {
+                    // 3. 再生が成功したら即停止
                     audio.pause();
                     audio.currentTime = 0;
-                    audio.volume = 1; // 音量戻す
-                }).catch(() => {});
+                    
+                    // 4. ミュート解除 (次回以降、音が出るように)
+                    audio.muted = false;
+                }).catch(e => {
+                    console.log("Audio unlock failed:", e);
+                });
             });
         }
 
@@ -337,7 +342,6 @@
 
             let audioToPlay;
             if (type === 'snap') {
-                // スナップ音はプールから順番に使う（連打対応）
                 audioToPlay = sounds.snap[snapIndex];
                 snapIndex = (snapIndex + 1) % SNAP_POOL_SIZE;
             } else {
@@ -346,16 +350,28 @@
 
             if (audioToPlay) {
                 audioToPlay.currentTime = 0;
-                audioToPlay.play().catch(e => { /* iOSのエラー抑制 */ });
+                // 通常再生時は muted = false であること
+                audioToPlay.muted = false; 
+                audioToPlay.play().catch(e => {});
             }
         }
 
         function startGame() {
-            // ここでオーディオをアンロック
+            // アンロック処理（無音）
             unlockAudio();
             
-            // クリック音も再生
-            playSound('click');
+            // スタート時のクリック音（有音）
+            // unlockAudioと同時に呼ぶと競合する可能性があるため、わずかに遅らせるか
+            // 別のインスタンスを使うのが理想だが、ここではクリック音だけ別途鳴らす
+            if (!isMuted) {
+                // sounds.click は unlockAudio で処理中かもしれないため、
+                // 強制的に鳴らすために状態をリセットして再生
+                setTimeout(() => {
+                    sounds.click.muted = false;
+                    sounds.click.currentTime = 0;
+                    sounds.click.play().catch(()=>{});
+                }, 50);
+            }
 
             document.getElementById('title-screen').style.opacity = '0';
             setTimeout(() => {
@@ -437,7 +453,6 @@
             const newY = Math.round(parseFloat(activePiece.el.style.top) / (CELL + GAP));
 
             if (newX !== activePiece.oldX || newY !== activePiece.oldY) {
-                // スナップ音再生 (Poolを使用)
                 playSound('snap');
             }
 
