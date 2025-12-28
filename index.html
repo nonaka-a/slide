@@ -15,21 +15,16 @@
         <button class="toolbar-btn" data-type="click" id="mute-btn" onclick="toggleMute()">音量: ON</button>
     </div>
 
-   <div id="title-screen">
-        <!-- テキストを画像に変更 -->
+    <div id="title-screen">
         <img src="image/title.png" alt="スライド パズル" class="title-logo">
 
-        <!-- スライドショー -->
         <div class="slider-container">
             <div class="slider-track">
-                <!-- 1セット目 -->
                 <img src="image/01.jpg" alt="Puzzle 1" class="slide-img">
                 <img src="image/02.jpg" alt="Puzzle 2" class="slide-img">
                 <img src="image/03.jpg" alt="Puzzle 3" class="slide-img">
                 <img src="image/04.jpg" alt="Puzzle 4" class="slide-img">
                 <img src="image/05.jpg" alt="Puzzle 5" class="slide-img">
-                
-                <!-- 2セット目 -->
                 <img src="image/01.jpg" alt="Puzzle 1" class="slide-img">
                 <img src="image/02.jpg" alt="Puzzle 2" class="slide-img">
                 <img src="image/03.jpg" alt="Puzzle 3" class="slide-img">
@@ -49,24 +44,42 @@
                 <button class="level-btn" data-type="click" onclick="initGame(3)">LV 3</button>
                 <button class="level-btn" data-type="click" onclick="initGame(4)">LV 4</button>
                 <button class="level-btn" data-type="click" onclick="initGame(5)">LV 5</button>
+                <!-- クリエイトボタン追加 -->
+                <button class="level-btn create-btn" data-type="click" onclick="initEditor()">クリエイト</button>
             </div>
 
+            <!-- ボードとパレットを囲むコンテナ -->
             <div class="game-container">
                 <div class="board" id="board">
                     <div class="exit-zone"></div>
+                </div>
+                
+                <!-- パレット（エディタ用） -->
+                <div id="editor-palette" style="display: none;">
+                    <div class="palette-item piece small" onpointerdown="spawnPiece(event, 'small')"></div>
+                    <div class="palette-item piece v-rect" onpointerdown="spawnPiece(event, 'v-rect')"></div>
+                    <!-- 赤コマ(big)削除 -->
+                    <div class="palette-item piece green-h" onpointerdown="spawnPiece(event, 'green-h')"></div>
                 </div>
             </div>
 
             <div id="message"></div>
 
-            <div class="controls">
+            <!-- 通常プレイ用コントロール -->
+            <div class="controls" id="normal-controls">
                 <button class="reset" data-type="click" onclick="showResetConfirm()">リセット</button>
-            <button class="reset" data-type="click" onclick="showTitleConfirm()">タイトル</button>
+                <button class="reset" data-type="click" onclick="showTitleConfirm()">タイトル</button>
+            </div>
+
+            <!-- エディタ用コントロール -->
+            <div class="controls" id="editor-controls" style="display: none;">
+                <!-- IDを追加してJSからテキスト操作しやすくする -->
+                <button id="editor-action-btn" class="reset" data-type="click" onclick="handleEditorAction()">プレイ</button>
+                <button class="reset" data-type="click" onclick="exitEditor()">もどる</button>
             </div>
         </div>
     </div>
 
-    <!-- 確認モーダル -->
     <div id="confirm-modal">
         <div class="modal-content">
             <div class="modal-text">リセットしますか？</div>
@@ -76,7 +89,7 @@
             </div>
         </div>
     </div>
-    <!-- タイトル確認モーダル（新規追加） -->
+
     <div id="title-confirm-modal">
         <div class="modal-content">
             <div class="modal-text">タイトルにもどりますか？</div>

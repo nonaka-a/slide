@@ -300,3 +300,59 @@ button.reset { padding: 10px 40px; border: 1px solid #000; background: #fff; cur
     background: #fff;
     color: #000;
 }
+
+/* ...既存のコードは維持し、末尾に追加または該当箇所を修正... */
+
+/* レベルボタンの作成用 */
+.level-btn.create-btn {
+    background: #444;
+    color: #fff;
+    border-color: #666;
+}
+
+/* ゲームコンテナ：エディタ時は横並びにするためFlexbox化 */
+.game-container {
+    background-color: #1a1a1a;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    border: 2px solid #333;
+    /* Flexbox追加 */
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+/* パレットエリア */
+#editor-palette {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+/* パレット内のアイテム */
+.palette-item {
+    position: relative !important; /* 絶対配置を解除して並べる */
+    top: auto !important;
+    left: auto !important;
+    margin: 0 auto;
+    cursor: pointer !important;
+    transform: scale(0.8); /* 少し小さく表示 */
+    box-shadow: none !important;
+}
+.palette-item:hover {
+    transform: scale(0.9);
+    filter: brightness(1.2);
+}
+
+/* 既存のstyle.cssの以下の修正も確認 */
+.controls {
+    /* 以前の変更で display: flex; になっているはず */
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
