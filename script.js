@@ -239,3 +239,31 @@ function executeReset() {
     hideResetConfirm();
     initGame(currentLevel);
 }
+
+/* --- 既存のコードの末尾に追加してください --- */
+
+// --- タイトルへ戻るモーダル制御 ---
+function showTitleConfirm() {
+    document.getElementById('title-confirm-modal').classList.add('visible');
+}
+
+function hideTitleConfirm() {
+    document.getElementById('title-confirm-modal').classList.remove('visible');
+}
+
+function executeTitleReturn() {
+    hideTitleConfirm();
+    
+    // ゲーム画面を隠す
+    const gameScreen = document.getElementById('game-screen');
+    gameScreen.classList.remove('visible');
+    
+    // タイトル画面を表示する
+    const titleScreen = document.getElementById('title-screen');
+    titleScreen.style.display = 'flex'; // まずdisplayを戻す
+    
+    // 少し待ってからフェードイン（CSS transitionを効かせるため）
+    setTimeout(() => {
+        titleScreen.style.opacity = '1';
+    }, 50);
+}

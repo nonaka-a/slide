@@ -61,6 +61,7 @@
 
             <div class="controls">
                 <button class="reset" data-type="click" onclick="showResetConfirm()">リセット</button>
+            <button class="reset" data-type="click" onclick="showTitleConfirm()">タイトル</button>
             </div>
         </div>
     </div>
@@ -72,6 +73,16 @@
             <div class="modal-buttons">
                 <button class="modal-btn yes" data-type="click" onclick="executeReset()">はい</button>
                 <button class="modal-btn no" data-type="click" onclick="hideResetConfirm()">いいえ</button>
+            </div>
+        </div>
+    </div>
+    <!-- タイトル確認モーダル（新規追加） -->
+    <div id="title-confirm-modal">
+        <div class="modal-content">
+            <div class="modal-text">タイトルにもどりますか？</div>
+            <div class="modal-buttons">
+                <button class="modal-btn yes" data-type="click" onclick="executeTitleReturn()">はい</button>
+                <button class="modal-btn no" data-type="click" onclick="hideTitleConfirm()">いいえ</button>
             </div>
         </div>
     </div>
