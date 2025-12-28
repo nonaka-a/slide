@@ -1,0 +1,296 @@
+:root {
+    --cell-size: 75px;
+    --gap: 10px;
+    --red: #ff3b30;
+    --blue: #4cc9f0;
+    --yellow: #ffcc00;
+    --green: #88d44c;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --highlight: rgba(255, 255, 255, 0.3);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    touch-action: none;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.header-toolbar {
+    width: 100%;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    z-index: 110;
+}
+
+.toolbar-btn {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#title-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.4s;
+}
+
+.title-logo {
+    max-width: 90%;  /* 画面幅が狭くてもはみ出さないように */
+    width: 500px;    /* 基本の幅（画像の大きさに合わせて調整してください） */
+    height: auto;    /* アスペクト比を維持 */
+    margin-bottom: -100px;
+    /* 任意：画像に影をつける場合 */
+    filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.2));
+}
+
+/* --- 以下をstyle.cssの末尾に追加 --- */
+
+.slider-container {
+    width: 100%;
+    max-width: 800px; /* 画面幅いっぱいに広がらないように制限 */
+    height: 180px;    /* 表示エリアの高さ */
+    overflow: hidden; /* 枠外の画像を隠す */
+    margin-bottom: 40px;
+    position: relative;
+    /* 左右を少しフェードさせる演出（お好みで） */
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.slider-track {
+    display: flex;
+    width: max-content; /* 中身に合わせて幅を確保 */
+    /* 5枚に合わせて時間を調整（20s -> 25s） */
+    animation: scroll-left 25s linear infinite;
+}
+
+.slide-img {
+    height: 150px; /* 画像の高さ固定 */
+    width: auto;   /* 幅は比率維持 */
+    margin-right: 30px; /* 画像間の隙間 */
+    border-radius: 8px;
+    border: 3px solid #1a1a1a;
+    box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+    background-color: #fff;
+}
+
+/* 右から左への移動アニメーション */
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        /* 全体の半分の幅（1セット分）だけ移動して瞬時に0に戻ることでループに見せる */
+        transform: translateX(-50%);
+    }
+}
+
+.play-btn {
+    font-size: 20px;
+    padding: 12px 60px;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#game-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+    margin-top: 40px;
+}
+
+#game-screen.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#game-view-wrapper {
+    transition: transform 0.2s ease-out;
+    transform-origin: center top;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.level-selector {
+    margin-bottom: 25px;
+    display: flex;
+    gap: 8px;
+}
+
+.level-btn {
+    padding: 8px 14px;
+    border: 1px solid #000;
+    background: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.level-btn.active {
+    background: #000;
+    color: #fff;
+}
+
+.game-container {
+    background-color: #1a1a1a;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    border: 2px solid #333;
+}
+
+.board {
+    width: calc(var(--cell-size) * 4 + var(--gap) * 3);
+    height: calc(var(--cell-size) * 5 + var(--gap) * 4);
+    position: relative;
+    background-color: #000;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.piece {
+    position: absolute;
+    border-radius: 12px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    box-shadow: 0 4px 0 var(--shadow), inset 0 2px 3px var(--highlight);
+    z-index: 1;
+}
+
+.piece:active { cursor: grabbing; z-index: 10; }
+
+.piece.big {
+    width: calc(var(--cell-size) * 2 + var(--gap));
+    height: calc(var(--cell-size) * 2 + var(--gap));
+    background: linear-gradient(145deg, var(--red), #c0392b);
+}
+.piece.big::before {
+    content: ""; width: 60%; height: 60%; background-color: rgba(0,0,0,0.15);
+    clip-path: polygon(50% 10%, 90% 90%, 10% 90%);
+}
+
+.piece.v-rect {
+    width: var(--cell-size);
+    height: calc(var(--cell-size) * 2 + var(--gap));
+    background: linear-gradient(145deg, var(--blue), #0096c7);
+}
+.piece.v-rect::after {
+    content: ""; width: 25%; height: 70%; border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 20px; background: rgba(0,0,0,0.1);
+}
+
+.piece.green-h {
+    width: calc(var(--cell-size) * 2 + var(--gap));
+    height: var(--cell-size);
+    background: linear-gradient(145deg, var(--green), #6ba63c);
+}
+.piece.green-h::after {
+    content: ""; width: 70%; height: 25%; border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 20px; background: rgba(0,0,0,0.1);
+}
+
+.piece.small {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    background: linear-gradient(145deg, var(--yellow), #f39c12);
+}
+.piece.small::before {
+    content: ""; width: 50%; height: 50%; border-radius: 50%; border: 3px double rgba(0,0,0,0.15);
+}
+
+.exit-zone {
+    position: absolute; 
+    bottom: 0; 
+    left: calc(var(--cell-size) + var(--gap)); 
+    width: calc(var(--cell-size) * 2 + var(--gap)); 
+    height: 6px;
+    background: var(--red);
+    border-radius: 3px 3px 0 0;
+    opacity: 0.8;
+}
+
+#message { margin-top: 20px; font-size: 20px; font-weight: bold; height: 24px; text-transform: uppercase; }
+
+.controls { margin-top: 20px; }
+button.reset { padding: 10px 40px; border: 1px solid #000; background: #fff; cursor: pointer; font-weight: bold; }
+
+/* モーダル用スタイル */
+#confirm-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+#confirm-modal.visible {
+    display: flex;
+}
+.modal-content {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 2px solid #000;
+}
+.modal-text {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+.modal-btn {
+    padding: 8px 25px;
+    border: 1px solid #000;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+}
+.modal-btn.yes {
+    background: #000;
+    color: #fff;
+}
+.modal-btn.no {
+    background: #fff;
+    color: #000;
+}
